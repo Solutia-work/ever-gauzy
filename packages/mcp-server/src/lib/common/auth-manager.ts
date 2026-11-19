@@ -305,9 +305,10 @@ export class AuthManager {
 		try {
 			if (!state.tokenData?.refreshToken) {
 				if (environment.debug) {
-					logger.warn('🔄 No refresh token available');
+					logger.warn('🔄 No refresh token available, attempting full login...');
 				}
-				return false;
+				// Fall back to full login when refresh token is missing
+				return await this.login();
 			}
 
 			if (environment.debug) {
