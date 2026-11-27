@@ -292,6 +292,22 @@ export class HttpTransport {
 				return next();
 			}
 
+			// No credentials at all on an OAuth-protected route: answer 401 with the protected-resource
+			// metadata (RFC 9728 §5.1) so an MCP client can start OAuth. A 403 here stops that discovery.
+			if (onOauthProtectedRoute && !hasBearerToken && !sessionId) {
+				const resourceUri = this.authorizationConfig.resourceUri;
+				res.setHeader(
+					'WWW-Authenticate',
+					`Bearer resource_metadata="${resourceUri}/.well-known/oauth-protected-resource"`
+				);
+				res.setHeader('Cache-Control', 'no-store');
+				res.status(401).json({
+					error: 'unauthorized',
+					error_description: 'Bearer token required'
+				});
+				return;
+			}
+
 			// Missing or invalid CSRF protection
 			res.status(403).json({
 				error: 'CSRF protection required',
